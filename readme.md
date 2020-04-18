@@ -1,5 +1,5 @@
 # How to Connect to EdgeDB in Python
-EdgeDB is 'an Object-Relation Database'. That's a funcy way of saying that it's a hybrid between tabular systems (like Postgres and MySQL) and document- style or graph-like systems(like MongoDB or Neo4j). Its feature set is really impressive but for this article we're going to focus on one small task: connecting to the database from Python. No queries, no schema; just one thing in (hopefully) a digestable amount of detail. We're going to use a few recent Python features as well: type annotations, dataclasses, f-strings and enums.
+[EdgeDB](https://edgedb.com/) is 'an Object-Relation Database'. That's a fancy way of saying that it's a hybrid between tabular systems (like Postgres and MySQL) and document- style or graph-like systems(like MongoDB or Neo4j). Its feature set is really impressive but for this article we're going to focus on one small task: connecting to the database from Python. No queries, no schema; just one thing in (hopefully) a digestable amount of detail. We're going to use a few recent Python features as well: type annotations, dataclasses, f-strings and enums.
 
 **Our Goals**:
  - Connect Synchronously
