@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import typing
-from enum import Enum
+from enum import Enum, auto
 from dataclasses import dataclass
 
 import edgedb
 
 
-class ConnectionType(Enum):
-    SYNC = 1
-    ASYNC = 2
-    POOL = 3
+CONNECTION_TYPES = ('SYNC', 'ASYNC', 'POOL')
 
 
 @dataclass
@@ -26,25 +23,26 @@ class EdgeDBConnection:
     pool: typing.Optional[edgedb.AsyncIOPool] = None
     pool_min_size: int = 1
     pool_max_size: int = 1
-    connection_type: ConnectionType = 'ASYNC'
+    connection_type: ConnectionType = None
 
     def __call__(
-        self, connection_type: ConnectionType = "SYNC"
+        self, connection_type: ConnectionType = None
     ) -> typing.Union[
         edgedb.BlockingIOConnection,
         typing.Coroutine[typing.Any, typing.Any, edgedb.AsyncIOConnection],
     ]:
-        if connection_type not in ('SYNC', 'ASYNC', 'POOL'):
+        if not connection_type:
+            connection_type = self.connection_type
+        if connection_type not in CONNECTION_TYPES:
             raise TypeError(
                 f"'connection_type' must be one of 'SYNC', 'ASYNC' or 'POOL'. \
                 You provided '{connection_type}'"
             )
-        self.connection_type = connection_type
-        if self.connection_type == "ASYNC":
+        if connection_type == "ASYNC":
             return self.connect_async()
-        if self.connection_type == "SYNC":
+        elif connection_type == "SYNC":
             return self.connect_sync()
-        if self.connection_type == "POOL":
+        elif connection_type == "POOL":
             return self.connect_async_pool()
 
     def connect_sync(

@@ -90,7 +90,6 @@ In our new `connect.py` file, let's import all of our dependencies:
 from __future__ import annotations
 
 import typing
-from enum import Enum
 from dataclasses import dataclass
 
 import edgedb
@@ -343,12 +342,9 @@ test.py ....                                                                    
 
 ## An Await Agnostic Interface
 Great! We can now connect in several different ways from the same object. But this could still be improved. What if we wanted to store the same connection type (sync/async/pool) and connect that way each time by default?
-Well, we know our connection options, so let's put those in an enum and add a preference to our dataclass:
+Well, we know our connection options, so let's put those in a tuple and add a preference to our dataclass:
 ```python
-class ConnectionType(Enum):
-    SYNC = 1
-    ASYNC = 2
-    POOL = 3
+CONNECTION_TYPES = ('SYNC', 'ASYNC', 'POOL')
 
 # and in the dataclass
   pool_max_size: int = 1
@@ -362,24 +358,25 @@ def __call__(
         edgedb.BlockingIOConnection,
         typing.Coroutine[typing.Any, typing.Any, edgedb.AsyncIOConnection],
     ]:
-        if connection_type not in ('SYNC', 'ASYNC', 'POOL'):
-            raise TypeError(
-                f"'connection_type' must be one of 'SYNC', 'ASYNC' or 'POOL'. \
-                You provided '{connection_type}'"
-            )
-        self.connection_type = connection_type
-        if self.connection_type == "ASYNC":
-            return self.connect_async()
-        if self.connection_type == "SYNC":
-            return self.connect_sync()
-        if self.connection_type == "POOL":
-            return self.connect_async_pool()
+      if not connection_type:
+            connection_type = self.connection_type
+      if connection_type not in CONNECTION_TYPES:
+          raise TypeError(
+              f"'connection_type' must be one of 'SYNC', 'ASYNC' or 'POOL'. \
+              You provided '{connection_type}'"
+          )
+      if connection_type == "ASYNC":
+          return self.connect_async()
+      elif connection_type == "SYNC":
+          return self.connect_sync()
+      elif connection_type == "POOL":
+          return self.connect_async_pool()
 ```
 Included is a validation for `connection_type` which enforces we don't do something like pass in 'sync' instead of 'SYNC'. Ask me how I know.
 ```python
 @pytest.mark.usefixtures("connection_object")
 @pytest.mark.xfail
-def test_edgedb_enum_validator(connection_object) -> typing.NoReturn:
+def test_edgedb_connection_type_validator(connection_object) -> typing.NoReturn:
     sync_connection = connection_object("sync")
 ```
 ```
@@ -394,7 +391,7 @@ test.py ....x                                                                   
 
 ============================================================ 4 passed, 1 xfailed in 2.48s ============================================================
 ```
-So let's use this failing example to refactor our other tests.
+So let's use this failing example to refactor our other tests. And also add a test for the default condition.
 ```python
 # in test_edgedb_sync_connection
 sync_connection = connection_object("SYNC")
@@ -402,18 +399,28 @@ sync_connection = connection_object("SYNC")
 async_connection = await connection_object("ASYNC")
 # in test_edgedb_async_pool
 async_pool = await connection_object("POOL")
+
+@pytest.mark.usefixtures("connection_object")
+@pytest.mark.asyncio
+async def test_edgedb_default_connection(connection_object) -> None:
+    assert connection_object.connection_type == 'ASYNC'
+    default_connection = await connection_object()
+    assert isinstance(default_connection, edgedb.AsyncIOConnection)
+    await default_connection.aclose()
+    assert default_connection.is_closed() is True
 ```
 And test:
 ```
+(.venv) @agritheory:~/edgedb_connect$ python -m pytest test.py -p no:warnings
 ================================================================ test session starts =================================================================
 platform linux -- Python 3.8.2, pytest-5.4.1, py-1.8.1, pluggy-0.13.1
 rootdir: /home/tyler/edgedb_connect
 plugins: asyncio-0.10.0
-collected 5 items                                                                                                                                    
+collected 6 items                                                                                                                                    
 
-test.py ....x                                                                                                                                  [100%]
+test.py .....x                                                                                                                                 [100%]
 
-============================================================ 4 passed, 1 xfailed in 2.39s ============================================================
+============================================================ 5 passed, 1 xfailed in 3.13s ============================================================
 ```
 ## But why is that useful?
 Fair question. If you were to integrate the `edgedb` library into an application like Quart or Starlette, you might want to establish a connection and load some of the application's state in an intentionally blocking way and then switch to a non-blocking pattern later on. You could set the default to `'ASYNC'` or `'POOL'` but do that intial loading by passing `'SYNC'` to the connection instance. Things that are running in an event loop still need `await` in front of them.

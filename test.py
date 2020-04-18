@@ -15,6 +15,7 @@ def connection_object() -> EdgeDBConnection:
         password="edgedb",
         database="edgedb",
         timeout=60,
+        connection_type="ASYNC"
     )
 
 
@@ -39,6 +40,16 @@ def test_edgedb_sync_connection(connection_object) -> None:
 
 @pytest.mark.usefixtures("connection_object")
 @pytest.mark.asyncio
+async def test_edgedb_default_connection(connection_object) -> None:
+    assert connection_object.connection_type == 'ASYNC'
+    default_connection = await connection_object()
+    assert isinstance(default_connection, edgedb.AsyncIOConnection)
+    await default_connection.aclose()
+    assert default_connection.is_closed() is True
+
+
+@pytest.mark.usefixtures("connection_object")
+@pytest.mark.asyncio
 async def test_edgedb_async_connections(connection_object) -> None:
     async_connection = await connection_object("ASYNC")
     assert isinstance(async_connection, edgedb.AsyncIOConnection)
@@ -56,5 +67,5 @@ async def test_edgedb_async_pool(connection_object) -> None:
 
 @pytest.mark.usefixtures("connection_object")
 @pytest.mark.xfail
-def test_edgedb_enum_validator(connection_object) -> typing.NoReturn:
+def test_edgedb_connection_type_validator(connection_object) -> typing.NoReturn:
     sync_connection = connection_object("sync")
