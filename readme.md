@@ -285,7 +285,7 @@ test.py ...                                                                     
 -- Docs: https://docs.pytest.org/en/latest/warnings.html
 =========================================================== 3 passed, 2 warnings in 1.71s ============================================================
 ```
-That's _also_ barely different. True, but the use of the `pytest-asyncio` provided decorator is required. If you don't install it, pytest will let you know that you should have and skip the test. You may see some warning from pytest about 'direct construction of Function has been deprecated'... it's not your fault, `pytest-asyncio` needs to accommodate differences in Python's asycio API from 3.5 to 3.8. You can safely ignore this warning.
+That's _also_ barely different. True, but the use of the `pytest-asyncio` provided decorator is required. If you don't install it, pytest will let you know that you should have and skip the test. You may see some warning from pytest about 'direct construction of Function has been deprecated' It's not your fault, `pytest-asyncio` needs to accommodate differences in Python's asycio API from version 3.5 to version 3.8 and some of the internals of asyncio have changed during that time. You can safely ignore this warning.
 
 ## Let's make a pool
 The pooled interface is really cool. It allows you to create and allocate async connections to a database without having to re-establish each time.
@@ -348,12 +348,12 @@ CONNECTION_TYPES = ('SYNC', 'ASYNC', 'POOL')
 
 # and in the dataclass
   pool_max_size: int = 1
-  connection_type: ConnectionType = 'ASYNC'
+  connection_type: str = 'ASYNC'
 ```
 So how are we going to do this? We can use the `EdgeDBConnection` object's `__call__` method and return the preferred connection type from there.
 ```python
 def __call__(
-        self, connection_type: ConnectionType = "SYNC"
+        self, connection_type: str = "ASYNC"
     ) -> typing.Union[
         edgedb.BlockingIOConnection,
         typing.Coroutine[typing.Any, typing.Any, edgedb.AsyncIOConnection],

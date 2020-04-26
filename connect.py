@@ -23,7 +23,7 @@ class EdgeDBConnection:
     pool: typing.Optional[edgedb.AsyncIOPool] = None
     pool_min_size: int = 1
     pool_max_size: int = 1
-    connection_type: ConnectionType = None
+    connection_type: typing.Optional[str] = None
 
     def __call__(
         self, connection_type: ConnectionType = None
