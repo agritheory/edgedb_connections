@@ -1,5 +1,5 @@
 # How to Connect to EdgeDB in Python
-[EdgeDB](https://edgedb.com/) is 'an Object-Relation Database'. That's a fancy way of saying that it's a hybrid between tabular systems (like Postgres and MySQL) and document- style or graph-like systems(like MongoDB or Neo4j). Its feature set is really impressive but for this article we're going to focus on one small task: connecting to the database from Python. No queries, no schema; just one thing in (hopefully) a digestable amount of detail. We're going to use a few recent Python features as well: type annotations, dataclasses, f-strings and enums.
+[EdgeDB](https://edgedb.com/) is 'an Object-Relation Database'. That's a fancy way of saying that it's a hybrid between tabular systems (like Postgres and MySQL) and document- style or graph-like systems (like MongoDB or Neo4j). Its feature set is really impressive, but for this article we're going to focus on one small task: connecting to the database from Python. No queries, no schema; just one thing in (hopefully) a digestible amount of detail. We're going to use a few recent Python features as well: type annotations, dataclasses and f-strings.
 
 **Our Goals**:
  - Connect Synchronously
@@ -95,7 +95,7 @@ from dataclasses import dataclass
 import edgedb
 ```
 
-OK. Without going into too much detail we're going to use a Dataclass to store our connection parameters. The attribute names will match the API for connection parameters as documented in the EdgeDB Python client.
+Without going into too much detail we're going to use a Dataclass to store our connection parameters. The attribute names will match the API for connection parameters as documented in the EdgeDB Python client.
 ```python
 @dataclass
 class EdgeDBConnection:
@@ -110,7 +110,7 @@ class EdgeDBConnection:
 ```
 It turns out there quite a few options available for connecting to EdgeDB. We're _not_ going to be using the DSN API and we _will_ be defaulting to connecting over a UNIX socket on the default port of 5656, which you may remember seeing in the Docker command. (The 8888 and 8889 ports are used for HTTP and GraphQL and those features are out of scope for this article.)
 
-OK. Let's write a class method to connect to EdgeDB.
+Let's write a class method to connect to EdgeDB.
 ```python
 def connect_sync(
         self,
@@ -127,14 +127,14 @@ def connect_sync(
             timeout=self.timeout,
         )
 ```
-Between these type hints and the ones from the class declaration it should be pretty easy to see what's going on here. We're creating a wrapper acound the connection parameters and a way to call it: `edgedb.connect()`
+Between these type hints and the ones from the class declaration it should be pretty easy to see what's going on here. We're creating a wrapper around the connection parameters and a way to call it: `edgedb.connect()`
 
 ## This is not TDD. It's 'testing early'.
 
 
-That all looks like it should work and if you wanted to, you could import it into the repl and start interacting with EdgeDB. But we're not goign to do that. We're going to be good citizens and write a test that tests this method.
+That all looks like it should work and if you wanted to, you could import it into the repl and start interacting with EdgeDB. But we're not going to do that. We're going to be good citizens and write a test that tests this method.
 
-To get started with the testing, we'll need to add some dependencies to our project. (We're going to add pytest's asyncio utils here premtively).
+To get started with the testing, we'll need to add some dependencies to our project. (We're going to add pytest's asyncio utils here preemptively).
 ```bash
 @agritheory:~/edgedb_connect$ poetry add pytest pytest-asyncio --dev
 Using version ^5.4.1 for pytest
@@ -160,7 +160,7 @@ Package operations: 11 installs, 0 updates, 0 removals
   - Installing pytest-asyncio (0.10.0)
 @agritheory:~/edgedb_connect$ touch test.py
 ```
-OK, in our newly created `test.py` file let's see what we can break. First our dependencies:
+In our newly created `test.py` file let's see what we can break. First our dependencies:
 ```python
 import typing
 import pytest
@@ -183,7 +183,7 @@ def connection_object() -> EdgeDBConnection:
         timeout=60,
     )
 ```
-The hardest part of writing tests is getting started. The next hardest part is deciding what to test. In this case lets start with a simple sanity check on our fixture. If this test passes then we've confimed that our fixture is behaving as expected.
+The hardest part of writing tests is getting started. The next hardest part is deciding what to test. In this case lets start with a simple sanity check on our fixture. If this test passes then we've confirmed that our fixture is behaving as expected.
 
 ```python
 @pytest.mark.usefixtures("connection_object")
@@ -219,7 +219,7 @@ def test_edgedb_sync_connection(connection_object) -> None:
     sync_connection.close()
     assert sync_connection.is_closed() is True
 ```
-Since it's polite to close your database connection when you're done with it, we'll do that and assert that it is actually close. Both the `close` and `is_closed` methods are coming from the `BlockingIOConnection` class. Let's run the test.
+Since it's polite to close your database connection when you're done with it, we'll do that and assert that it is actually closed. Both the `close` and `is_closed` methods are coming from the `BlockingIOConnection` class. Let's run the test.
 ```
 ================================================================ test session starts =================================================================
 platform linux -- Python 3.8.2, pytest-5.4.1, py-1.8.1, pluggy-0.13.1
@@ -252,7 +252,7 @@ async def connect_async(
             timeout=self.timeout,
         )
 ```
-That's barely different than the synchronus connection method! That can't be right. Let's write a test to find out.
+That's barely different than the synchronous connection method! That can't be right. Let's write a test to find out.
 ```python
 @pytest.mark.usefixtures("connection_object")
 @pytest.mark.asyncio
@@ -285,7 +285,7 @@ test.py ...                                                                     
 -- Docs: https://docs.pytest.org/en/latest/warnings.html
 =========================================================== 3 passed, 2 warnings in 1.71s ============================================================
 ```
-That's _also_ barely different. True, but the use of the `pytest-asyncio` provided decorator is required. If you don't install it, pytest will let you know that you should have and skip the test. You may see some warning from pytest about 'direct construction of Function has been deprecated'... it's not your fault, `pytest-asyncio` needs to accomodate differences in Python's asycio API from 3.5 to 3.8. You can safely ignore this warning.
+That's _also_ barely different. True, but the use of the `pytest-asyncio` provided decorator is required. If you don't install it, pytest will let you know that you should have and skip the test. You may see some warning from pytest about 'direct construction of Function has been deprecated'... it's not your fault, `pytest-asyncio` needs to accommodate differences in Python's asycio API from 3.5 to 3.8. You can safely ignore this warning.
 
 ## Let's make a pool
 The pooled interface is really cool. It allows you to create and allocate async connections to a database without having to re-establish each time.
@@ -350,7 +350,7 @@ CONNECTION_TYPES = ('SYNC', 'ASYNC', 'POOL')
   pool_max_size: int = 1
   connection_type: ConnectionType = 'ASYNC'
 ```
-So how are we going to do this? We can use the EdgeDBConnection object's `__call__` method and return the preferred connection type from there.
+So how are we going to do this? We can use the `EdgeDBConnection` object's `__call__` method and return the preferred connection type from there.
 ```python
 def __call__(
         self, connection_type: ConnectionType = "SYNC"
@@ -423,7 +423,7 @@ test.py .....x                                                                  
 ============================================================ 5 passed, 1 xfailed in 3.13s ============================================================
 ```
 ## But why is that useful?
-Fair question. If you were to integrate the `edgedb` library into an application like Quart or Starlette, you might want to establish a connection and load some of the application's state in an intentionally blocking way and then switch to a non-blocking pattern later on. You could set the default to `'ASYNC'` or `'POOL'` but do that intial loading by passing `'SYNC'` to the connection instance. Things that are running in an event loop still need `await` in front of them.
+Fair question. If you were to integrate the `edgedb` library into an application like Quart or Starlette, you might want to establish a connection and load some of the application's state in an intentionally blocking way and then switch to a non-blocking pattern later on. You could set the default to `'ASYNC'` or `'POOL'` but do that initial loading by passing `'SYNC'` to the connection instance. Things that are running in an event loop still need `await` in front of them.
 
 ## This isn't the end
 Honestly, this is one of the least interesting aspects of EdgeDB. But maybe this is interesting enough for you to go out and look at [EdgeDB's features](https://edgedb.com/roadmap/), like it's killer schema, built in validations or that it will natively serve you GraphQL.
